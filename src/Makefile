@@ -3,4 +3,4 @@ all: common
 	common
 
 common: common.cc
-	g++ ${OPTS} common.cc -o common -D_IO_TEST 
+	g++ ${OPTS} common.cc -o common -D_COMMON_TEST 

@@ -30,42 +30,46 @@ vector<float> toFloat(vector<string> v){
     return res;
 }
 
-
-
 Eigen::MatrixXf loadtxt(string fn){
     Eigen::MatrixXf d1;
-    ifstream f(fn.c_str());
-    if(f.fail()) {
-        cout << "Error: File could not be open";
-        return d1;
-    }
-
-    
     deque<vector<float> > d0;
-    string line;
-    vector<float> fline;
-
     int dim = -1;
-    while(getline(f,line)){ // ToDo: Move to get deque
-        fline = toFloat(split(line));
-        if(dim==-1) dim=fline.size();
-        else{
-            if(fline.size()!=dim){
-                cout << "Dimension mismatch " << dim << " != " 
-                     << fline.size() << "\n   ->" << line  << "\n";
-            }
+
+    { // Read File
+        string line;
+        vector<float> fline;
+
+        ifstream f(fn.c_str()); // ToDo: Move to some file opener
+        if(f.fail()) {
+            cout << "Error: File could not be open";
+            return d1;
         }
-        d0.push_back(fline); 
+
+        while(getline(f,line)){ // ToDo: Move to get deque
+            fline = toFloat(split(line));
+            if(dim==-1) dim=fline.size();
+            else{
+                if(fline.size()!=dim){
+                    cout << "Dimension mismatch " << dim << " != " 
+                         << fline.size() << "\n   ->" << line  << "\n";
+                }
+            }
+            d0.push_back(fline); 
+        }
+        f.close();
     }
     
-    d1.resize(d0.size(), dim); // ToDo: Move to iter2DToEigen
-    int rn=0, cn=0;
-    for(deque<vector<float> >::iterator r=d0.begin();
-        r!=d0.end(); ++r, ++rn){
-        cn=0;
-        for(vector<float>::iterator i=r->begin(); 
-            i!=r->end(); ++i, ++cn){
-            d1(rn,cn)= (*i);
+    { // Construct Matrix
+        d1.resize(d0.size(), dim); // ToDo: Move to iter2DToEigen
+        int rn=0, cn=0;
+        while( !d0.empty() ){
+            cn=0;
+            for(vector<float>::iterator i=(d0.front()).begin(); 
+                i!=(d0.front()).end(); ++i, ++cn){
+                d1(rn,cn)= (*i);
+            }
+            d0.pop_front();
+            rn++;
         }
     }
     return d1;
@@ -101,7 +105,7 @@ ostream& operator<< (ostream& o, const Container<T>& container) {
 }
 
 
-#ifdef _IO_TEST
+#ifdef _COMMON_TEST
 int main(void){
     Eigen::MatrixXf d = loadtxt("test/test2D.txt");
     
