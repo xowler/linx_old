@@ -12,4 +12,5 @@
 *.la
 *.a
 
-src/io
+src/common
+deps

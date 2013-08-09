@@ -90,10 +90,25 @@ ostream& operator<< (ostream& o, const Container<T>& container) {
         return o;
 }
 
+#define check(a,b,c) { \
+        float aa = a;\
+        float bb = b;\
+        if ( fabs(aa-bb)<0.001 ){\
+                cerr << "PASSED: " << c << endl; \
+        } else { \
+                cerr << "FAILED: " << c << "("<<aa<<" "<<bb<<")"<<endl;\
+        }\
+}
+
 
 #ifdef _IO_TEST
 int main(void){
-    loadtxt("test/test2D.txt");
+    Eigen::MatrixXf d = loadtxt("test/test2D.txt");
+    
+    check(1.697860215697601305e+01, d(0,0), "First Line");
+    check(3.019403097946556613e+02, d(9999,1), "Last Line"); 
+    
+    
     
 }
 #endif

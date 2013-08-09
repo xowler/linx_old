@@ -1,6 +1,6 @@
 OPTS = -I ../deps/eigen
-all: io
-	io
+all: common
+	common
 
-io: io.cc
-	g++ ${OPTS} io.cc -o io -D_IO_TEST 
+common: common.cc
+	g++ ${OPTS} common.cc -o common -D_IO_TEST 
