@@ -165,11 +165,10 @@ model readGRO(string fn){ // Not biggie copying it, rather small
 
 vector<vector<int> > residuize(model &m){
     vector<vector<int> > res;
-    vector<int> blank;
     if(m.n==0) cout << "ERROR: Something is wrong with this model. Zero lenght" << endl;
     string lr = "fake";
     for(int i=0; i<m.n; i++){
-        if(lr!=m.p[i].rname) res.push_back(blank);
+        if(lr!=m.p[i].rname) res.push_back(vector<int>());
         res[res.size()-1].push_back(i);
         lr = m.p[i].rname;
     }
