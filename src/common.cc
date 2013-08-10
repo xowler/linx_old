@@ -33,16 +33,16 @@ vector<string> split(const string &s, char delim=' ') {
     return elems;
 }
 
-vector<float> &toFloat(vector<string> v,vector<float> &res){
+vector<float> &to_float(vector<string> v,vector<float> &res){
     res.clear();
     for(vector<string>::iterator i=v.begin(); i!=v.end(); ++i) 
         res.push_back(atof(i->c_str()));
     return res;
     
 }
-vector<float> toFloat(vector<string> v){
+vector<float> to_float(vector<string> v){
     vector<float> res;
-    toFloat(v,res);
+    to_float(v,res);
     return res;
 }
 
@@ -53,7 +53,7 @@ void fopen(string fn, ifstream &f){
         cout << "ERROR: File could not be open";
     } 
 }
-void readlines(string fn, deque<string> &lines){
+void read_lines(string fn, deque<string> &lines){
     deque<string> res;
     string line;
     ifstream f;
@@ -61,12 +61,12 @@ void readlines(string fn, deque<string> &lines){
     while(getline(f,line)) res.push_back(line);
     res.swap(lines);
 }
-deque<string> readlines(string fn){
+deque<string> read_lines(string fn){
     deque<string> d;
-    readlines(fn, d);
+    read_lines(fn, d);
     return d;
 }
-Eigen::MatrixXf loadtxt(string fn){
+Eigen::MatrixXf load_txt(string fn){
     Eigen::MatrixXf d1;
     deque<vector<float> > d0;
     int dim = -1;
@@ -79,7 +79,7 @@ Eigen::MatrixXf loadtxt(string fn){
         fopen(fn,f);
 
         while(getline(f,line)){ // ToDo: Move to get deque
-            fline = toFloat(split(line));
+            fline = to_float(split(line));
             if(dim==-1) dim=fline.size();
             else{
                 if(fline.size()!=dim){ // ToDo: throw error
@@ -124,10 +124,11 @@ struct model {
     int n;
     string extra;
 };
+vector<float> inter_residue_distance(){}
 
-model readGRO(string fn){ // Not biggie copying it, rather small
+model read_gro(string fn){ // Not biggie copying it, rather small
     model res;
-    deque<string> f = readlines(fn);
+    deque<string> f = read_lines(fn);
 
     res.extra = f[0] + "\n" + f[f.size()-1];
     f.pop_front();
@@ -151,7 +152,7 @@ model readGRO(string fn){ // Not biggie copying it, rather small
         res.p.push_back(a);
         //cout << a.rid << "/" << a.rname << "/" << a.id << "/" << a.name << "/" << endl;
 
-        toFloat(split(l->substr(21,24)),x);
+        to_float(split(l->substr(21,24)),x);
         res.x(r,0) = x[0];
         res.x(r,1) = x[1];
         res.x(r,2) = x[2];
@@ -200,7 +201,7 @@ int main(void){
     {
         cout << endl << "-- GRO " << endl;
         // readGRO
-        model gro = readGRO("test/bhp.gro");
+        model gro = read_gro("test/bhp.gro");
         ftest(gro.x(207,1),0.375,"Coordinates from file");
         stest(gro.p[184].name,"N","Attributes from file");
 
@@ -211,8 +212,8 @@ int main(void){
     // Iter and strings
     {
         cout << endl << "-- split " << endl;
-        ftest(7,toFloat(split("0 1 2 3 4 5 6  7"))[7], "Split and toFloat ' '");
-        ftest(7,toFloat(split("0/1/2/3/4/5/6//7",'/'))[8], "Split and toFloat '/'");
+        ftest(7,to_float(split("0 1 2 3 4 5 6  7"))[7], "Split and toFloat ' '");
+        ftest(7,to_float(split("0/1/2/3/4/5/6//7",'/'))[8], "Split and toFloat '/'");
     }
 
     {
@@ -228,7 +229,7 @@ int main(void){
     // Loadtxt
     {
         cout << endl << "-- loadtxt " << endl;
-        Eigen::MatrixXf d = loadtxt("test/test2D.txt");
+        Eigen::MatrixXf d = load_txt("test/test2D.txt");
         ftest(1.697860215697601305e+01, d(0,0), "First Line");
         ftest(3.019403097946556613e+02, d(9999,1), "Last Line"); 
     }
