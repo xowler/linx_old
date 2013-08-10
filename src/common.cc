@@ -6,6 +6,7 @@
 #include <deque>
 #include <map>
 #include <Eigen/Dense>
+#include <cmath>
 
 using namespace std; 
 
@@ -124,7 +125,6 @@ struct model {
     int n;
     string extra;
 };
-vector<float> inter_residue_distance(){}
 
 model read_gro(string fn){ // Not biggie copying it, rather small
     model res;
@@ -176,6 +176,26 @@ vector<vector<int> > residuize(model &m){
     return res;
 }
 
+// LinAlg
+float norm2(Eigen::Vector3f &x){
+    return x.dot(x);
+}
+float norm(Eigen::Vector3f &x){
+    return sqrt(norm2(x));
+}
+float dist(Eigen::Vector3f &x, Eigen::Vector3f &y){
+    Eigen::Vector3f z = x-y;
+    return norm(z);
+}
+float dist2(Eigen::Vector3f &x, Eigen::Vector3f &y){
+    Eigen::Vector3f z = x-y;
+    return norm2(z);
+}
+
+vector<float> inter_group_distances(vector<vector<int> > r, Eigen::MatrixXf &m){
+
+}
+
 // Testing
 #define ftest(a,b,c) { \
         float aa = a;\
@@ -198,6 +218,14 @@ vector<vector<int> > residuize(model &m){
 
 #ifdef _COMMON_TEST
 int main(void){
+    {
+        cout << endl << "-- Linear Algebra " << endl;
+        Eigen::Vector3f x, y;
+        x << 0,0,1;
+        y << 1,0,0;
+        ftest(dist(x,y),1.41421,"Metric test");
+    }
+
     {
         cout << endl << "-- GRO " << endl;
         // readGRO
