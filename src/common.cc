@@ -5,7 +5,6 @@
 #include <fstream>
 #include <deque>
 #include <map>
-#include <Eigen/Dense>
 #include <cmath>
 
 using namespace std; 
@@ -67,46 +66,26 @@ deque<string> read_lines(string fn){
     read_lines(fn, d);
     return d;
 }
-Eigen::MatrixXf load_txt(string fn){
-    Eigen::MatrixXf d1;
-    deque<vector<float> > d0;
-    int dim = -1;
+void load_txt(string fn, vector<float> &d, int &s ){
+    s = -1;
+    string line;
+    vector<float> fline;
 
-    { // Read File
-        string line;
-        vector<float> fline;
+    ifstream f;
+    fopen(fn,f);
 
-        ifstream f;
-        fopen(fn,f);
-
-        while(getline(f,line)){ // ToDo: Move to get deque
-            fline = to_float(split(line));
-            if(dim==-1) dim=fline.size();
-            else{
-                if(fline.size()!=dim){ // ToDo: throw error
-                    cout << "ERROR: Dimension mismatch " << dim << " != " 
-                         << fline.size() << "\n   ->" << line  << "\n";
-                }
+    while(getline(f,line)){
+        fline = to_float(split(line));
+        if(s==-1) s=fline.size();
+        else{
+            if(fline.size()!=s){ // ToDo: throw error
+                cout << "ERROR: Dimension mismatch " << s << " != " 
+                     << fline.size() << "\n   ->" << line  << "\n";
             }
-            d0.push_back(fline); 
         }
-        f.close();
+        for(int i=0; i<s; ++i) d.push_back(fline[i]);
     }
-    
-    { // Construct Matrix
-        d1.resize(d0.size(), dim); // ToDo: Move to iter2DToEigen
-        int rn=0, cn=0;
-        while( !d0.empty() ){
-            cn=0;
-            for(vector<float>::iterator i=(d0.front()).begin(); 
-                i!=(d0.front()).end(); ++i, ++cn){
-                d1(rn,cn)= (*i);
-            }
-            d0.pop_front();
-            rn++;
-        }
-    }
-    return d1;
+    f.close();
 }
 
 // Models
@@ -120,7 +99,7 @@ struct atom {
     string b;
 };
 struct model {
-    Eigen::Matrix<float,Eigen::Dynamic,3> x;
+    vector<float> x;
     vector<atom> p;
     int n;
     string extra;
@@ -134,7 +113,7 @@ model read_gro(string fn){ // Not biggie copying it, rather small
     f.pop_front();
     f.pop_front();
     f.pop_back();
-    res.x.resize(f.size(),3);
+    res.x.reserve(f.size()*3);
     res.p.reserve(f.size());
     res.n = f.size();
 
@@ -153,9 +132,9 @@ model read_gro(string fn){ // Not biggie copying it, rather small
         //cout << a.rid << "/" << a.rname << "/" << a.id << "/" << a.name << "/" << endl;
 
         to_float(split(l->substr(21,24)),x);
-        res.x(r,0) = x[0];
-        res.x(r,1) = x[1];
-        res.x(r,2) = x[2];
+        res.x.push_back(x[0]);
+        res.x.push_back(x[1]);
+        res.x.push_back(x[2]);
         ++r;
         //cout << x[0] << '/' << x[1] << '/' <<x[2] << '/' << endl;
         f.pop_front();
@@ -164,36 +143,80 @@ model read_gro(string fn){ // Not biggie copying it, rather small
     return res;
 }
 
-vector<vector<int> > residuize(model &m){
+vector<vector<int> > residuize(model &m, vector<string> &rv, vector<bool> mask){
     vector<vector<int> > res;
     if(m.n==0) cout << "ERROR: Something is wrong with this model. Zero lenght" << endl;
     string lr = "fake";
     for(int i=0; i<m.n; i++){
-        if(lr!=m.p[i].rname) res.push_back(vector<int>());
+        if(i<mask.size()){
+            if(!mask[i]) continue;
+        }
+        if(lr!=m.p[i].rname) {
+            res.push_back(vector<int>());
+            rv.push_back(m.p[i].rname);
+        }
         res[res.size()-1].push_back(i);
         lr = m.p[i].rname;
     }
     return res;
 }
+vector<vector<int> > residuize(model &m, vector<string> &rv){
+    return residuize(m,rv,vector<bool>());
+}
 
 // LinAlg
-float norm2(Eigen::Vector3f &x){
-    return x.dot(x);
+float norm2(float *x){
+    return x[0]*x[0] + x[1]*x[1] + x[2]*x[2];
 }
-float norm(Eigen::Vector3f &x){
+float norm(float *x){
     return sqrt(norm2(x));
 }
-float dist(Eigen::Vector3f &x, Eigen::Vector3f &y){
-    Eigen::Vector3f z = x-y;
-    return norm(z);
-}
-float dist2(Eigen::Vector3f &x, Eigen::Vector3f &y){
-    Eigen::Vector3f z = x-y;
+float dist2(float *x, float *y){
+    float z[3];
+    z[0] = x[0]-y[0];
+    z[1] = x[1]-y[1];
+    z[2] = x[2]-y[2];
     return norm2(z);
 }
+float dist(float *x, float *y){
+    return sqrt(dist2(x,y));
+}
+float min(float x, float y){
+    return x>y?y:x;
+}
 
-vector<float> inter_group_distances(vector<vector<int> > r, Eigen::MatrixXf &m){
+float min_dist(float *m, vector<int> g1, vector<int> g2){
+    float res = 999999;
+    int i,j,I=g1.size(),J=g2.size();
+    for(i=0;i<I;i++){
+        for(j=0;j<J;j++){
+            //cout << m.row(i);
+            //norm2(m.row(i));
+            //res = min(res,dist(m.row(i),m.row(j)));
+        }
+    }
+    return res;
+}
 
+vector<float> inter_group_distances(vector<vector<int> > r, float *m){
+    vector<float> res;
+
+    int N = r.size();
+    for(int i=0; i<N; i++){
+        for(int j=i+2; j<N;j++){
+            
+        }
+    }
+
+    return res;
+}
+
+template <class T>
+void print_vector(T v){
+    cout << "[";
+    int s=v.size();
+    for(int i=0;  i<s; ++i) cout << v[i] << ",";
+    cout << "]" << endl;
 }
 
 // Testing
@@ -220,9 +243,7 @@ vector<float> inter_group_distances(vector<vector<int> > r, Eigen::MatrixXf &m){
 int main(void){
     {
         cout << endl << "-- Linear Algebra " << endl;
-        Eigen::Vector3f x, y;
-        x << 0,0,1;
-        y << 1,0,0;
+        float x[3] = {1,0,0}, y[3] = {0,0,1};
         ftest(dist(x,y),1.41421,"Metric test");
     }
 
@@ -230,18 +251,20 @@ int main(void){
         cout << endl << "-- GRO " << endl;
         // readGRO
         model gro = read_gro("test/bhp.gro");
-        ftest(gro.x(207,1),0.375,"Coordinates from file");
+        ftest(gro.x[207*3+1],0.375,"Coordinates from file");
         stest(gro.p[184].name,"N","Attributes from file");
 
         // Model
-        ftest(residuize(gro)[8][5],146,"Identify residues");
+        vector<string> res;
+        ftest(residuize(gro,res)[8][5],146,"Identify residues");
+        stest(res[12],"NH2","Residue names");
     }
     
     // Iter and strings
     {
         cout << endl << "-- split " << endl;
-        ftest(7,to_float(split("0 1 2 3 4 5 6  7"))[7], "Split and toFloat ' '");
-        ftest(7,to_float(split("0/1/2/3/4/5/6//7",'/'))[8], "Split and toFloat '/'");
+        ftest(4,to_float(split("0 1 2 3  4"))[4], "Split and toFloat ' '");
+        ftest(4,to_float(split("0/1/2/3//4/",'/'))[5], "Split and toFloat '/'");
     }
 
     {
@@ -257,9 +280,12 @@ int main(void){
     // Loadtxt
     {
         cout << endl << "-- loadtxt " << endl;
-        Eigen::MatrixXf d = load_txt("test/test2D.txt");
-        ftest(1.697860215697601305e+01, d(0,0), "First Line");
-        ftest(3.019403097946556613e+02, d(9999,1), "Last Line"); 
+        
+        int stride;
+        vector<float> d;
+        load_txt("test/test2D.txt",d,stride);
+        ftest(1.697860215697601305e+01, d[0], "First Line");
+        ftest(3.019403097946556613e+02, d[9999*stride + 1], "Last Line"); 
     }
 }
 #endif
