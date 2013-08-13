@@ -330,7 +330,11 @@ void cts(string gro, string xtc, string gz, string txt){
     cout << "Number of contacts: " << ncts << endl;
 
     ccxtc::xtc f(xtc.c_str());  
-    f.next();
+    ogzstream o(gz.c_str());
+    while(f.next()){
+        o << join(" ", inter_group_distances(res,*f.x)) << "\n"; 
+    }
+    o.close();
 
     
 }
