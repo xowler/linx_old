@@ -6,10 +6,18 @@
 #include <deque>
 #include <map>
 #include <cmath>
+#include <cstdlib>
 
 using namespace std; 
 
 // iters and string stuff
+template <class T>
+void print_vector(T v){
+    cout << "[";
+    int s=v.size();
+    for(int i=0;  i<s; ++i) cout << v[i] << ",";
+    cout << "]" << endl;
+}
 string trim(string s){
     int n=s.size();
     int i=0, j=n-1; 
@@ -17,7 +25,6 @@ string trim(string s){
     for(;s[j]==' ' && j>0; --j);
     return (i<=j)? s.substr(i,j-i+1) : string("");
 }
-
 vector<string> &split(const string &s, char delim, vector<string> &elems) {
     stringstream ss(s);
     string item;
@@ -32,7 +39,6 @@ vector<string> split(const string &s, char delim=' ') {
     split(s, delim, elems);
     return elems;
 }
-
 vector<float> &to_float(vector<string> v,vector<float> &res){
     res.clear();
     for(vector<string>::iterator i=v.begin(); i!=v.end(); ++i) 
@@ -44,6 +50,9 @@ vector<float> to_float(vector<string> v){
     vector<float> res;
     to_float(v,res);
     return res;
+}
+string _(char *s){
+    return string(s);
 }
 
 // IO
@@ -104,7 +113,6 @@ struct model {
     int n;
     string extra;
 };
-
 model read_gro(string fn){ // Not biggie copying it, rather small
     model res;
     deque<string> f = read_lines(fn);
@@ -142,7 +150,6 @@ model read_gro(string fn){ // Not biggie copying it, rather small
     
     return res;
 }
-
 vector<vector<int> > residuize(model &m, vector<string> &rv, vector<bool> mask){
     vector<vector<int> > res;
     if(m.n==0) cout << "ERROR: Something is wrong with this model. Zero lenght" << endl;
@@ -162,6 +169,14 @@ vector<vector<int> > residuize(model &m, vector<string> &rv, vector<bool> mask){
 }
 vector<vector<int> > residuize(model &m, vector<string> &rv){
     return residuize(m,rv,vector<bool>());
+}
+vector<bool> heavy(model &m){
+    vector<bool> res;
+    for(int i=0; i<m.n; i++){
+        if(m.p[i].name[0]=='H') res.push_back(0);
+        else res.push_back(1);
+    }
+    return res;
 }
 
 // LinAlg
@@ -184,40 +199,29 @@ float dist(float *x, float *y){
 float min(float x, float y){
     return x>y?y:x;
 }
-
 float min_dist(float *m, vector<int> g1, vector<int> g2){
     float res = 999999;
     int i,j,I=g1.size(),J=g2.size();
     for(i=0;i<I;i++){
         for(j=0;j<J;j++){
-            //cout << m.row(i);
-            //norm2(m.row(i));
-            //res = min(res,dist(m.row(i),m.row(j)));
+            res = min(res,dist(m+3*g1[i],m+3*g2[j]));
         }
     }
     return res;
 }
-
 vector<float> inter_group_distances(vector<vector<int> > r, float *m){
     vector<float> res;
 
     int N = r.size();
     for(int i=0; i<N; i++){
         for(int j=i+2; j<N;j++){
-            
+            res.push_back(min_dist(m,r[i],r[j]));  
         }
     }
 
     return res;
 }
 
-template <class T>
-void print_vector(T v){
-    cout << "[";
-    int s=v.size();
-    for(int i=0;  i<s; ++i) cout << v[i] << ",";
-    cout << "]" << endl;
-}
 
 // Testing
 #define ftest(a,b,c) { \
@@ -239,6 +243,33 @@ void print_vector(T v){
         }\
 }
 
+// Body
+void pca(int argc, char *argv[]){}
+void cts(int argc, char *argv[]){
+    bool usage = 1;
+    
+    if( argc>1){
+        if(_(argv[1])=="cts"){
+            usage = 0;
+            cts(argc,argv);
+        }
+        if(_(argv[1])=="pca"){
+            usage = 0;
+            pca(argc,argv);
+        }
+    }
+    
+    if(usage){
+        cout <<
+        "Usage: \n" <<
+        "   \n"<<
+        "   " << argv[0] <<" [cts|pca]\n"<<
+        "\n"<<
+        "\n"<< endl;
+    }
+    
+}
+
 #ifdef _COMMON_TEST
 int main(void){
     {
@@ -247,7 +278,7 @@ int main(void){
         ftest(dist(x,y),1.41421,"Metric test");
     }
 
-    {
+    { // Model
         cout << endl << "-- GRO " << endl;
         // readGRO
         model gro = read_gro("test/bhp.gro");
@@ -256,8 +287,11 @@ int main(void){
 
         // Model
         vector<string> res;
-        ftest(residuize(gro,res)[8][5],146,"Identify residues");
+        ftest(residuize(gro,res,heavy(gro))[8][5],154,"Identify residues");
         stest(res[12],"NH2","Residue names");
+        ftest(inter_group_distances(residuize(gro,res,heavy(gro)),gro.x.data())[1],
+            6.674750931682766897e-01,
+            "Contacts");
     }
     
     // Iter and strings
@@ -287,5 +321,35 @@ int main(void){
         ftest(1.697860215697601305e+01, d[0], "First Line");
         ftest(3.019403097946556613e+02, d[9999*stride + 1], "Last Line"); 
     }
+}
+#else
+int main(int argc, char *argv[]){
+    {// Parse Options
+        bool usage = 1;
+        
+        if( argc>1){
+            if(_(argv[1])=="cts"){
+                usage = 0;
+                cts(argc,argv);
+            }
+            if(_(argv[1])=="pca"){
+                usage = 0;
+                pca(argc,argv);
+            }
+        }
+        
+        if(usage){
+            cout <<
+            "Usage: \n" <<
+            "   \n"<<
+            "   " << argv[0] <<" [cts|pca]\n"<<
+            "\n"<<
+            "\n"<< endl;
+            return 0;
+        }
+    }
+    
+
+    return 0;
 }
 #endif
