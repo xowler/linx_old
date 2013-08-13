@@ -12,12 +12,11 @@
 using namespace std; 
 
 // iters and string stuff
-template <class T>
-void print_vector(T v){
-    cout << "[";
-    int s=v.size();
-    for(int i=0;  i<s; ++i) cout << v[i] << ",";
-    cout << "]" << endl;
+string _(char *s){ return string(s); }
+string _(int s){ 
+    stringstream ss;
+    ss << s;
+    return ss.str(); 
 }
 string trim(string s){
     int n=s.size();
@@ -26,6 +25,16 @@ string trim(string s){
     for(;s[j]==' ' && j>0; --j);
     return (i<=j)? s.substr(i,j-i+1) : string("");
 }
+template <class T>
+string join(string d, T v){
+    if(v.size()==0) return string();
+    stringstream ss;
+    ss << v[0];
+    for(int i=1;i<v.size();i++) ss << d << v[i];
+    return ss.str();
+}
+template <class T>
+void print_vector(T v){ cout << "[" << join(",",v) << "]" << endl; }
 vector<string> &split(const string &s, char delim, vector<string> &elems) {
     stringstream ss(s);
     string item;
@@ -51,12 +60,6 @@ vector<float> to_float(vector<string> v){
     vector<float> res;
     to_float(v,res);
     return res;
-}
-string _(char *s){ return string(s); }
-string _(int s){ 
-    stringstream ss;
-    ss << s;
-    return ss.str(); 
 }
 
 // IO
@@ -315,6 +318,7 @@ int main(void){
 }
 #else
 #include "ccxtc.h"
+#include "gzstream.h"
 void cts(string gro, string xtc, string gz, string txt){
     model m = read_gro(gro);
     
@@ -327,7 +331,6 @@ void cts(string gro, string xtc, string gz, string txt){
 
     ccxtc::xtc f(xtc.c_str());  
     f.next();
-    print_vector(inter_group_distances(res,*f.x));
 
     
 }
