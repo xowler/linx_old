@@ -1,9 +1,8 @@
-OPTS = -I ../deps/eigen
 all: common do
-	do help
+	do cts -s test/bhp.gro -f test/bhp.xtc  -o a.gz  
 
 common: common.cc
-	g++ ${OPTS} common.cc -o common -D_COMMON_TEST 
+	g++ common.cc -o common -D_COMMON_TEST 
 
 do: common.cc
-	g++ ${OPTS} common.cc -o do
+	g++ common.cc -o do -lccxtc_linux_gnu_x86_64 -I ../deps/xtc -L ../deps/xtc

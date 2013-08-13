@@ -1,14 +1,16 @@
+from numpy import *
 import linx
 
 gro = linx.gro('bhp.gro')
 h = [i for i,j in enumerate(gro[0]) if j['name'][0]!='H']
 rs = []
-lr = ""
+lr = -1
 for i,a in enumerate(gro[0]):
     if i in h:
-        if a['resname']!=lr: rs.append([]) 
+        r = a['resid']
+        if r!=lr: rs.append([]) 
         rs[-1].append(i)
-        lr = a['resname']
+        lr = r
 
 from numpy.linalg import norm
 def md(x1,x2):

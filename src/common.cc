@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 
+
 using namespace std; 
 
 // iters and string stuff
@@ -51,16 +52,25 @@ vector<float> to_float(vector<string> v){
     to_float(v,res);
     return res;
 }
-string _(char *s){
-    return string(s);
+string _(char *s){ return string(s); }
+string _(int s){ 
+    stringstream ss;
+    ss << s;
+    return ss.str(); 
 }
 
 // IO
-void fopen(string fn, ifstream &f){
+bool fopen(string fn, ifstream &f){
     f.open(fn.c_str());
     if(f.fail()){
-        cout << "ERROR: File could not be open";
+        cout << "ERROR: File could not be open" << endl;
+        return 0;
     } 
+    return 1;
+}
+bool fopen(string fn){
+    ifstream f;
+    return fopen(fn, f);
 }
 void read_lines(string fn, deque<string> &lines){
     deque<string> res;
@@ -153,17 +163,22 @@ model read_gro(string fn){ // Not biggie copying it, rather small
 vector<vector<int> > residuize(model &m, vector<string> &rv, vector<bool> mask){
     vector<vector<int> > res;
     if(m.n==0) cout << "ERROR: Something is wrong with this model. Zero lenght" << endl;
-    string lr = "fake";
+    int lr=-1;
     for(int i=0; i<m.n; i++){
         if(i<mask.size()){
             if(!mask[i]) continue;
         }
-        if(lr!=m.p[i].rname) {
+        if(lr!=m.p[i].rid) {
             res.push_back(vector<int>());
-            rv.push_back(m.p[i].rname);
+            rv.push_back(_(m.p[i].rid) + m.p[i].rname);
         }
         res[res.size()-1].push_back(i);
-        lr = m.p[i].rname;
+        lr = m.p[i].rid;
+
+        if(m.p[i].rname=="SOL"){
+            cout << "ERROR: Solvent present, results not guaranteed" << endl;
+            break;    
+        }
     }
     return res;
 }
@@ -245,30 +260,6 @@ vector<float> inter_group_distances(vector<vector<int> > r, float *m){
 
 // Body
 void pca(int argc, char *argv[]){}
-void cts(int argc, char *argv[]){
-    bool usage = 1;
-    
-    if( argc>1){
-        if(_(argv[1])=="cts"){
-            usage = 0;
-            cts(argc,argv);
-        }
-        if(_(argv[1])=="pca"){
-            usage = 0;
-            pca(argc,argv);
-        }
-    }
-    
-    if(usage){
-        cout <<
-        "Usage: \n" <<
-        "   \n"<<
-        "   " << argv[0] <<" [cts|pca]\n"<<
-        "\n"<<
-        "\n"<< endl;
-    }
-    
-}
 
 #ifdef _COMMON_TEST
 int main(void){
@@ -287,8 +278,8 @@ int main(void){
 
         // Model
         vector<string> res;
-        ftest(residuize(gro,res,heavy(gro))[8][5],154,"Identify residues");
-        stest(res[12],"NH2","Residue names");
+        ftest(residuize(gro,res,heavy(gro))[8][5],132,"Identify residues");
+        stest(res[12],"13GLY","Residue names");
         ftest(inter_group_distances(residuize(gro,res,heavy(gro)),gro.x.data())[1],
             6.674750931682766897e-01,
             "Contacts");
@@ -323,6 +314,65 @@ int main(void){
     }
 }
 #else
+#include "ccxtc.h"
+void cts(string gro, string xtc, string gz, string txt){
+    model m = read_gro(gro);
+    
+    vector<string> resn;
+    vector<vector<int> > res = residuize(m,resn,heavy(m));
+    cout << "Identifying residues: " << endl;
+    print_vector(resn);
+    int ncts = inter_group_distances(res,m.x.data()).size();
+    cout << "Number of contacts: " << ncts << endl;
+
+    ccxtc::xtc f(xtc.c_str());  
+    f.next();
+    print_vector(inter_group_distances(res,*f.x));
+
+    
+}
+void cts(int argc, char *argv[]){
+    bool usage = 1;
+    
+    string gro;    
+    string xtc;    
+    string gz;    
+    string txt;    
+
+    if( argc>2 ){
+        int i=2;
+        while(i<(argc-1)){
+            if(_(argv[i])=="-s")  gro = _(argv[++i]);
+            else if(_(argv[i])=="-f" ) xtc = _(argv[++i]);
+            else if(_(argv[i])=="-o" ) gz = _(argv[++i]);
+            else if(_(argv[i])=="-i" ) txt = _(argv[++i]);
+            i++;
+        }
+        if(gro.size()==0 || !fopen(gro)) { cout << "ERROR: No GRO file" << endl; }
+        else if(xtc.size()==0 || !fopen(xtc)) {cout << "ERROR: No XTC file" << endl; }
+        else if(gz.size()==0) {cout << "ERROR: No output file" << endl; }
+        else{
+            cts(gro,xtc,gz,txt);
+            usage = 0;
+        }
+    }
+    
+    if(usage){
+        cout <<
+        "Usage: \n" <<
+        "   \n" <<
+        "   " << argv[0] << " cts -s file.gro -f file.xtc -o file.gz [-i file.txt]\n" <<
+        "\n" <<
+        "Description:\n" <<
+        "\n" <<
+        "   -s file.gro  - input-   GRO file to identify Residues \n" <<
+        "   -f file.xtc  - input-   XTC file to use for calculation \n" <<
+        "   -o file.gz   -output-   output file (GZIP compressed) \n" <<
+        "   -i file.txt  -output-   Index file with the description of the columns \n" <<
+        "\n" << endl;
+    }
+    
+}
 int main(int argc, char *argv[]){
     {// Parse Options
         bool usage = 1;
@@ -342,9 +392,10 @@ int main(int argc, char *argv[]){
             cout <<
             "Usage: \n" <<
             "   \n"<<
-            "   " << argv[0] <<" [cts|pca]\n"<<
-            "\n"<<
-            "\n"<< endl;
+            "   -> " << argv[0] <<" [cts|pca]\n"<<
+            "   -> " << argv[0] <<" cts help\n"<<
+            "   -> " << argv[0] <<" pca help\n"<<
+            ""<< endl;
             return 0;
         }
     }
