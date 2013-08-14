@@ -246,23 +246,20 @@ vector<float> inter_group_distances(vector<vector<int> > r, float *m){
         float aa = a;\
         float bb = b;\
         if ( fabs(aa-bb)<0.001 ){\
-                cerr << "PASSED: " << c << endl; \
+                cout << "PASSED: " << c << endl; \
         } else { \
-                cerr << "!!!!!!!!!!FAILED: " << c << "("<<aa<<"|"<<bb<<")"<<endl;\
+                cout << "!!!!!!!!!!FAILED: " << c << "("<<aa<<"|"<<bb<<")"<<endl;\
         }\
 }
 #define stest(a,b,c) { \
         string aa = a;\
         string bb = b;\
         if ( aa==bb ){\
-                cerr << "PASSED: " << c << endl; \
+                cout << "PASSED: " << c << endl; \
         } else { \
-                cerr << "!!!!!!!!!!FAILED: " << c << "("<<aa<<"|"<<bb<<")"<<endl;\
+                cout << "!!!!!!!!!!FAILED: " << c << "("<<aa<<"|"<<bb<<")"<<endl;\
         }\
 }
-
-// Body
-void pca(int argc, char *argv[]){}
 
 #ifdef _COMMON_TEST
 int main(void){
@@ -279,13 +276,11 @@ int main(void){
         ftest(gro.x[207*3+1],0.375,"Coordinates from file");
         stest(gro.p[184].name,"N","Attributes from file");
 
-        // Model
         vector<string> res;
         ftest(residuize(gro,res,heavy(gro))[8][5],132,"Identify residues");
         stest(res[12],"13GLY","Residue names");
         ftest(inter_group_distances(residuize(gro,res,heavy(gro)),gro.x.data())[1],
-            6.674750931682766897e-01,
-            "Contacts");
+            6.674750931682766897e-01, "Contacts");
     }
     
     // Iter and strings
@@ -319,6 +314,20 @@ int main(void){
 #else
 #include "ccxtc.h"
 #include "gzstream.h"
+void calc_pca(int argc, char *argv[]){
+    bool usage=1;
+    if(usage){
+        cout << 
+            "Usage: \n" <<
+            "   " << argv[0] << " calc_pca -f file1.txt [file2.txt ...] -o pca.txt [-s skip] \n" <<
+            "\n" <<
+            "Description:\n" <<
+            "   -f files    - input-    Input files to use as input for the PCA\n" <<
+            "   -o pca.txt  -output-    Output file to store the PCA results\n" <<
+            "   -s skip     integer     Read every [skip] lines, default 1 \n" <<
+            "\n" << endl;
+    }
+}
 void cts(string gro, string xtc, string gz, string txt){
     model m = read_gro(gro);
     
@@ -389,9 +398,9 @@ int main(int argc, char *argv[]){
                 usage = 0;
                 cts(argc,argv);
             }
-            if(_(argv[1])=="pca"){
+            if(_(argv[1])=="calc_pca"){
                 usage = 0;
-                pca(argc,argv);
+                calc_pca(argc,argv);
             }
         }
         
@@ -399,9 +408,10 @@ int main(int argc, char *argv[]){
             cout <<
             "Usage: \n" <<
             "   \n"<<
-            "   -> " << argv[0] <<" [cts|pca]\n"<<
+            "   -> " << argv[0] <<" [cts|pca_calc|pca_do]\n"<<
             "   -> " << argv[0] <<" cts help\n"<<
-            "   -> " << argv[0] <<" pca help\n"<<
+            "   -> " << argv[0] <<" calc_pca help\n"<<
+            "   -> " << argv[0] <<" use_pca help\n"<<
             ""<< endl;
             return 0;
         }
